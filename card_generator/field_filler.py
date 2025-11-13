@@ -2,15 +2,33 @@ from PIL import Image, ImageDraw, ImageFont
 import textwrap
 import pandas
 
-att_dict = {"B21":"Earth Type", "B22":"Fire Type", "B23":"Water Type", "B24":"Wind Type", "B25":"Thunder Type", "B31":"Metallurgy", "B32":"Melee Type", "B33":"Indirect Type", "B34":"Weapon Type", "B35":"Defense Type", "B40":"Chimera Type", "B70":"Homunculus Type"}
+att_dict = {"B21":"Earth Type", "B22":"Fire Type", "B23":"Water Type", "B24":"Wind Type", "B25":"Thunder Type", "B31":"Metallurgy", "B32":"Melee Type", "B33":"Indirect Type", "B34":"Weapon Type", "B35":"Defense Type", "B40":"Chimera Type", "B70":"Homunculus Type", "C11":"Male","C12":"Female","C13":"Dog","C21":"Soldier","C22":"Master","C23":"Male (Animal)","C24":"Librarian","C25":"Policeman","C26":"Saint","C27":"Doctor","C28":"Lord of numbers","C29":"Phantom thief","C20":"Butcher","C31":"Chimera","C32":"Scientist","C33":"The Führer","C34":"Death row prisoner","C35":"Young lady","C41":"Alchemist","C42":"Foundation leader","C43":"Film director","C51":"Mechanical armourer","C61":"Homunculus","C62":"State alchemist","C81":"Ishvalan","E50":"Alchemy","E51":"Chimera"}
 
 def generate_card(serial="X-000", name="", AFicon="A", underline_types="", flavour="", bandaitag="", bullet1="", bullet2="", numbersTR="", APDP="", BP=""):
+
+    #determine card type:
+    cardtype = serial.split("-")[0][-1]
+    if cardtype == "P":
+        cardtype = "C"
+    if cardtype == "C":
+        if str(APDP) != "nan":
+            cardtype += "M"
+        else:
+            cardtype += "S"
+    
     #canvas
     img = Image.new("RGB", (700, 1000), color=(128,128,128))
 
     #card art and template
     cardart = Image.open("components/art.png")
-    cardbase = Image.open("components/bbase.png")
+    if cardtype == "B":
+        cardbase = Image.open("components/bbase.png")
+    if cardtype == "CM":
+        cardbase = Image.open("components/cmbase.png")
+    if cardtype == "CS":
+        cardbase = Image.open("components/csbase.png")
+    if cardtype == "E":
+        cardbase = Image.open("components/ebase.png")
     img.paste(cardart, (0,50))
     img.paste(cardbase, (0,0), mask=cardbase)
 
@@ -29,15 +47,15 @@ def generate_card(serial="X-000", name="", AFicon="A", underline_types="", flavo
 
     #topright values
     draw = ImageDraw.Draw(img)
-    if numbersTR != "":
+    if str(numbersTR) != "nan":
         draw.text((500, 70), numbersTR.split(",")[0], fill=(255,255,255), font=font1, anchor="mm")
         draw.text((575, 70), numbersTR.split(",")[1], fill=(255,255,255), font=font1, anchor="mm")
         draw.text((650, 70), numbersTR.split(",")[2], fill=(255,255,255), font=font1, anchor="mm")
     #BP
-    if str(int(BP)) != "0":
+    if str(BP) != "nan":
         draw.text((640, 690), str(int(BP)), fill=(255,255,255), font=font1, anchor="mm")
     #AP/DP
-    if APDP != "":
+    if str(APDP) != "nan":
         AP = APDP.split("-")[0]
         DP = APDP.split("-")[1]
         draw.text((80, 950), "+"+AP, fill=(255,128,128), font=font2, anchor="mm")
@@ -53,9 +71,13 @@ def generate_card(serial="X-000", name="", AFicon="A", underline_types="", flavo
     #Black bar attributes
     attributes = str(underline_types).split("-")#["MALE", "ISHVALAN", "HOMUNCULUS"]
     attribute_string = ""
-    for att in attributes:
-        attribute_string += (att_dict[serial.split("-")[0]+att] + "  ")
-    draw.text((190, 945), attribute_string, fill=(255,255,255), font=font3, anchor="lm")
+    if attributes[0] != "Blank":
+        for att in attributes:
+            attribute_string += (att_dict[cardtype[0]+att] + "  ")
+    if cardtype == "B" or cardtype == "CM":
+        draw.text((190, 945), attribute_string, fill=(255,255,255), font=font3, anchor="lm")
+    else:
+        draw.text((50, 945), attribute_string, fill=(255,255,255), font=font3, anchor="lm")
 
     #Word wrap only relevant for effects
     #d = ImageDraw.Draw(img)
@@ -110,7 +132,13 @@ def generate_card(serial="X-000", name="", AFicon="A", underline_types="", flavo
 
 ssheet = pandas.read_excel("../numbers - data entry.ods", engine="odf")
 row_index = 0
-dotheseones = ["B-001", "B-002", "B-003", "B-004", "B-005", "B-006", "B-007", "B-008", "B-009", "B-010", "B-011", "B-012", "B-013", "B-014", "B-015", "B-016", "B-017", "B-018", "B-019", "B-020", "B-021"]
+#dotheseones = ["B-001", "B-002", "B-003", "B-004", "B-005", "B-006", "B-007", "B-008", "B-009", "B-010", "B-011", "B-012", "B-013", "B-014", "B-015", "B-016", "B-017", "B-018", "B-019", "B-020", "B-021", "E-005", "C-010"]
+dotheseones = []
+for i in range(1,22):
+    dotheseones.append("B-"+("000"+str(i))[-3:])
+    dotheseones.append("C-"+("000"+str(i))[-3:])
+for i in range(1,16):
+    dotheseones.append("E-"+("000"+str(i))[-3:])
 for index, row in ssheet.iterrows():
     if ssheet.iat[row_index, 0] in dotheseones:
         generate_card(serial=ssheet.iat[row_index, 0], name=ssheet.iat[row_index, 2], AFicon=ssheet.iat[row_index, 5], underline_types=ssheet.iat[row_index, 7], bullet1=ssheet.iat[row_index, 10], bullet2=ssheet.iat[row_index, 13], numbersTR=ssheet.iat[row_index, 3], APDP=ssheet.iat[row_index, 4], BP=ssheet.iat[row_index, 6])
