@@ -1,8 +1,57 @@
 from PIL import Image, ImageDraw, ImageFont
 import textwrap
 import pandas
+import os
 
 att_dict = {"B21":"Earth Type", "B22":"Fire Type", "B23":"Water Type", "B24":"Wind Type", "B25":"Thunder Type", "B31":"Metallurgy", "B32":"Melee Type", "B33":"Indirect Type", "B34":"Weapon Type", "B35":"Defense Type", "B40":"Chimera Type", "B70":"Homunculus Type", "C11":"Male","C12":"Female","C13":"Dog","C21":"Soldier","C22":"Master","C23":"Male (Animal)","C24":"Librarian","C25":"Policeman","C26":"Saint","C27":"Doctor","C28":"Lord of numbers","C29":"Phantom thief","C20":"Butcher","C31":"Chimera","C32":"Scientist","C33":"The Führer","C34":"Death row prisoner","C35":"Young lady","C41":"Alchemist","C42":"Foundation leader","C43":"Film director","C51":"Mechanical armourer","C61":"Homunculus","C62":"State alchemist","C81":"Ishvalan","E50":"Alchemy","E51":"Chimera"}
+
+def generate_badge(input_text=""):
+    #input_text = "2,3,4"
+    AFG = False
+    if str(input_text) != "nan" and not os.path.isfile("components/badges/"+"AFG-" + input_text+".png") and not os.path.isfile("components/badges/"+input_text.replace(",","-")+".png"):
+        img = Image.new("RGBA", (800, 48), color=(0,0,0,0))
+
+        tip = Image.open("components/ATK-Start tri.png")
+        tail = Image.open("components/ATK-End tri.png")
+        mid = Image.open("components/ATK-Mid.png")
+        font4 = ImageFont.load_default(size=25.0)
+
+        icon_A = Image.open("components/icon1 sml.png")
+        icon_F = Image.open("components/icon2 sml.png")
+        icon_G = Image.open("components/icon3 sml.png")
+
+        img.paste(tip, (0,0))
+        draw = ImageDraw.Draw(img)
+        if len(input_text.split(",")) > 1 and len(input_text.split(" ")) == 1:
+            AFG = True
+            line_len = 100
+            if len(input_text.split(",")) > 2:
+                line_len = 206
+                img.paste(tip, (170,0),mask=tip)
+                img.paste(tail, (152,0), mask=tail)
+                for i in range(170+48, 170+48+40):
+                    img.paste(mid, (i,0))
+                img.paste(icon_G, (170+48,4), mask=icon_G)
+                draw.text((170+78,30), input_text.split(",")[2], fill=(255,255,255), font=font4, anchor="mm")
+            for i in range(48, 52 + 100):
+                img.paste(mid, (i,0))
+            img.paste(icon_A, (50,4), mask=icon_A)
+            img.paste(icon_F, (100,4), mask=icon_F)
+            draw.text((50+32,30), input_text.split(",")[0], fill=(255,255,255), font=font4, anchor="mm")
+            draw.text((100+32,30), input_text.split(",")[1], fill=(255,255,255), font=font4, anchor="mm")
+            #input_text = ""
+        else:
+            line_len = draw.textbbox((0,0), input_text, font=font4)[2]
+            for i in range(48, 52 + line_len):
+                img.paste(mid, (i,0))
+            draw.text((50,24), input_text, fill=(255,255,255), font=font4, anchor="lm")
+        #print(line_len)
+        img.paste(tail, (line_len+52,0), mask=tail)
+        crop_img = img.crop((0,0,line_len+100,48))
+        if AFG:
+            crop_img.save("components/badges/"+"AFG-" + input_text+".png")
+        elif input_text != "EFF" and input_text != "EXC":
+            crop_img.save("components/badges/"+input_text.replace(" ","_")+".png")
 
 def generate_card(serial="X-000", name="", AFicon="A", underline_types="", flavour="", bandaitag="", bullet1="", bullet2="", numbersTR="", APDP="", BP=""):
 
@@ -91,7 +140,7 @@ def generate_card(serial="X-000", name="", AFicon="A", underline_types="", flavo
     if len(bullet_lines) > 0:
         for bullet_line in bullet_lines:
             #print(bullet_line)
-            sample_line = "<stub1> " + bullet_line#And yet here was Matthew Cuthbert, at half-past [stub1] three on the afternoon of a busy day, placidly driving over the hollow and up the hill; moreover, he wore a white collar and his best suit of clothes, which was plain proof that he was going out of Avonlea; and he had the buggy and the sorrel mare, which betokened that he was going a considerable distance. Now, where was Matthew Cuthbert going and why was he going there?"
+            sample_line = bullet_line#And yet here was Matthew Cuthbert, at half-past [stub1] three on the afternoon of a busy day, placidly driving over the hollow and up the hill; moreover, he wore a white collar and his best suit of clothes, which was plain proof that he was going out of Avonlea; and he had the buggy and the sorrel mare, which betokened that he was going a considerable distance. Now, where was Matthew Cuthbert going and why was he going there?"
             line_blank = ""
             line_len_max = 580
             lineheight = 29#very subject to change
@@ -99,10 +148,20 @@ def generate_card(serial="X-000", name="", AFicon="A", underline_types="", flavo
             for word in sample_line.split(" "):
                 oldlen = len(line_blank)
                 if word[0] == "<" and word[-1] == ">":
-                    stub = Image.open("components/" + word[1:-1] + ".png")
-                    line_len = draw.textbbox((0,0), line_blank, font=font4)[2]
-                    img.paste(stub, (60 + line_len,745 + current_line*lineheight))
-                    final_line_len = line_len + stub.size[0]
+                    #print(word)
+                    stub = Image.open("components/badges/" + word[1:-1] + ".png")
+                    if word[1:-1] == "EFF" or word[1:-1] == "EXC":
+                        line_len = draw.textbbox((0,0), line_blank, font=font4)[2]
+                        img.paste(stub, (60 + line_len,745 + current_line*lineheight), mask=stub)
+                        final_line_len = line_len + stub.size[0]
+                    else:
+                        line_len = draw.textbbox((0,0), line_blank, font=font4)[2]
+                        if word[1:5] == "AFG-":
+                            img.paste(stub, (25 + line_len,740 + current_line*lineheight), mask=stub)
+                            final_line_len = -60+15 + line_len + stub.size[0]
+                        else:
+                            img.paste(stub, (30 + line_len,740 + current_line*lineheight), mask=stub)
+                            final_line_len = -60+20 + line_len + stub.size[0]
                     while final_line_len > line_len:
                         line_blank += " "
                         line_len = draw.textbbox((0,0), line_blank, font=font4)[2]
@@ -141,5 +200,24 @@ for i in range(1,16):
     dotheseones.append("E-"+("000"+str(i))[-3:])
 for index, row in ssheet.iterrows():
     if ssheet.iat[row_index, 0] in dotheseones:
-        generate_card(serial=ssheet.iat[row_index, 0], name=ssheet.iat[row_index, 2], AFicon=ssheet.iat[row_index, 5], underline_types=ssheet.iat[row_index, 7], bullet1=ssheet.iat[row_index, 10], bullet2=ssheet.iat[row_index, 13], numbersTR=ssheet.iat[row_index, 3], APDP=ssheet.iat[row_index, 4], BP=ssheet.iat[row_index, 6])
+        card_bullet1 = ""
+        card_bullet2 = ""
+        if str(ssheet.iat[row_index, 10]) != "nan":
+            if str(ssheet.iat[row_index, 8]) != "nan":
+                generate_badge(ssheet.iat[row_index, 8])
+                card_bullet1 += "<" + ssheet.iat[row_index, 8].replace(" ","_") + "> "
+                if str(ssheet.iat[row_index, 9]) != "nan":
+                    generate_badge(ssheet.iat[row_index, 9])
+                    card_bullet1 += "<" + "AFG-" + ssheet.iat[row_index, 9] + "> "
+            card_bullet1 += ssheet.iat[row_index, 10]
+        if str(ssheet.iat[row_index, 13]) != "nan":
+            if str(ssheet.iat[row_index, 11]) != "nan":
+                generate_badge(ssheet.iat[row_index, 11])
+                card_bullet2 += "<" + ssheet.iat[row_index, 11].replace(" ","_") + "> "
+                if str(ssheet.iat[row_index, 12]) != "nan":
+                    generate_badge(ssheet.iat[row_index, 12])
+                    card_bullet2 += "<" + "AFG-" + ssheet.iat[row_index, 12] + "> "
+            card_bullet2 += ssheet.iat[row_index, 13]
+        #bullet1=ssheet.iat[row_index, 10], bullet2=ssheet.iat[row_index, 13]
+        generate_card(serial=ssheet.iat[row_index, 0], name=ssheet.iat[row_index, 2], AFicon=ssheet.iat[row_index, 5], underline_types=ssheet.iat[row_index, 7], bullet1=card_bullet1, bullet2=card_bullet2, numbersTR=ssheet.iat[row_index, 3], APDP=ssheet.iat[row_index, 4], BP=ssheet.iat[row_index, 6])
     row_index += 1
